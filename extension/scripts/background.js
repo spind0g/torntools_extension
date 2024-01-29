@@ -676,11 +676,11 @@ async function updateUserdata() {
 		if (!settings.apiUsage.user.travel || !settings.notifications.types.global || !settings.notifications.types.traveling || !oldUserdata.travel) return;
 		if (userdata.travel.time_left !== 0 || oldUserdata.travel.time_left === 0) return;
 
-		await notifyUser("TornTools - Traveling", `You have landed in ${userdata.travel.destination}.`, LINKS.home);
+		await notifyUser("TornTools - Traveling", `You have landed in ${userdata.travel.destination}.`, userdata.travel.destination === 'Torn' ? LINKS.stocks : LINKS.home);
 		storeNotification({
 			title: "TornTools - Traveling",
 			message: `You have landed in ${userdata.travel.destination}.`,
-			url: LINKS.home,
+			url: userdata.travel.destination === 'Torn' ? LINKS.stocks : LINKS.home,
 			date: Date.now(),
 		});
 		await ttStorage.set({ notificationHistory });
@@ -998,11 +998,26 @@ async function updateStakeouts() {
 		if (stakeouts[id].alerts) {
 			const { okay, hospital, landing, online, life, offline, revivable } = stakeouts[id].alerts;
 
+            const attackable = (
+                userdata.travel.time_left === 0
+                &&
+                userdata.energy.current >= 25
+                &&
+                data.status.state !== 'Traveling'
+                &&
+                data.status.state !== 'Hospital'
+                &&
+                userdata.travel.destination === (data.status.state === 'Abroad' ? (data.status.description).split('').slice(3).join('') : 'Torn')
+            );
+
 			if (okay) {
 				const key = `${id}_okay`;
 				if (data.status.state === "Okay" && (!oldData || oldData.status.state !== data.status.state) && !notifications.stakeouts[key]) {
 					if (settings.notifications.types.global)
-						notifications.stakeouts[key] = newNotification("Stakeouts", `${data.name} is now okay.`, `https://www.torn.com/profiles.php?XID=${id}`);
+						notifications.stakeouts[key] = newNotification(
+                            "Stakeouts", `${attackable ? '🔪  ' : ''}${data.name} is now okay.${attackable ? ' Click here to attack!' : ''}`,
+                            attackable ? `https://www.torn.com/loader.php?sid=attack&user2ID=${id}` : `https://www.torn.com/profiles.php?XID=${id}`
+                        );
 				} else if (data.status.state !== "Okay") {
 					delete notifications.stakeouts[key];
 				}
@@ -1026,8 +1041,8 @@ async function updateStakeouts() {
 					if (settings.notifications.types.global)
 						notifications.stakeouts[key] = newNotification(
 							"Stakeouts",
-							`${data.name} is now ${data.status.state === "Abroad" ? data.status.description : "in Torn"}.`,
-							`https://www.torn.com/profiles.php?XID=${id}`
+							`${attackable ? '🔪  ' : ''}${data.status.state === 'Hospital' ? '🏥  ' : ''}${data.name} is now ${data.status.state === "Abroad" ? data.status.description : `in Torn.`}${attackable ? ' Click here to attack!' : ''}`,
+							attackable ? `https://www.torn.com/loader.php?sid=attack&user2ID=${id}` : `https://www.torn.com/profiles.php?XID=${id}`
 						);
 				} else if (data.last_action.status === "Traveling") {
 					delete notifications.stakeouts[key];
@@ -1043,8 +1058,8 @@ async function updateStakeouts() {
 					if (settings.notifications.types.global)
 						notifications.stakeouts[key] = newNotification(
 							"Stakeouts",
-							`${data.name} is now online.`,
-							`https://www.torn.com/profiles.php?XID=${id}`
+							`${attackable ? '🔪  ' : ''}${data.name} is now online.${attackable ? ' Click here to attack!' : ''}`,
+							attackable ? `https://www.torn.com/loader.php?sid=attack&user2ID=${id}` : `https://www.torn.com/profiles.php?XID=${id}`
 						);
 				} else if (data.last_action.status !== "Online") {
 					delete notifications.stakeouts[key];
@@ -1601,7 +1616,7 @@ async function updateNPCs() {
 
 function newNotification(title, message, link) {
 	return {
-		title: `TornTools - ${title}`,
+		title: `${userdata.travel && userdata.travel.time_left > 0 ? '✈️  ' : ''}TornTools - ${title}`,
 		message,
 		url: link,
 		date: Date.now(),
