@@ -1058,7 +1058,7 @@ async function updateStakeouts() {
 					if (settings.notifications.types.global)
 						notifications.stakeouts[key] = newNotification(
 							"Stakeouts",
-							`${attackable ? '🔪  ' : ''}${data.name} is now online.${attackable ? ' Click here to attack!' : ''}`,
+							`${attackable ? '🔪  ' : ''}${data.status.state === 'Hospital' ? '🏥  ' : ''}${data.name} is now online.${attackable ? ' Click here to attack!' : ''}`,
 							attackable ? `https://www.torn.com/loader.php?sid=attack&user2ID=${id}` : `https://www.torn.com/profiles.php?XID=${id}`
 						);
 				} else if (data.last_action.status !== "Online") {
